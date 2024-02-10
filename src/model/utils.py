@@ -98,7 +98,8 @@ def compute_sd_layer_shapes(
     for _ in range(n_layers):
         bandsplit_intervals = create_intervals(bandsplit_ratios)
         bandsplit_shapes = [
-            int(right * input_shape) - int(left * input_shape) for left, right in bandsplit_intervals
+            int(right * input_shape) - int(left * input_shape)
+            for left, right in bandsplit_intervals
         ]
         conv2d_shapes = [
             get_conv_output_shape(bs, stride=ds)

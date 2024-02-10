@@ -28,6 +28,7 @@ class FusionLayer(nn.Module):
         T is sequence length,
         C is input dimensionality.
     """
+
     def __init__(
         self, input_dim: int, kernel_size: int = 3, stride: int = 1, padding: int = 1
     ):
@@ -83,6 +84,7 @@ class Upsample(nn.Module):
         C_out is the number of output channels,
         F * stride + output_padding is the upsampled frequency dimension.
     """
+
     def __init__(
         self, input_dim: int, output_dim: int, stride: int, output_padding: int
     ):
@@ -130,6 +132,7 @@ class SULayer(nn.Module):
         T is sequence length,
         C is input dimensionality.
     """
+
     def __init__(
         self,
         input_dim: int,
@@ -164,7 +167,7 @@ class SULayer(nn.Module):
         Returns:
         - torch.Tensor: Output tensor of shape (B, F, T, C).
         """
-        x = x[:, self.sd_interval[0]: self.sd_interval[1]]
+        x = x[:, self.sd_interval[0] : self.sd_interval[1]]
         x = x.permute(0, 3, 1, 2)
         x = self.upsample(x)
         x = x.permute(0, 2, 3, 1)
@@ -194,6 +197,7 @@ class SUBlock(nn.Module):
         T is sequence length,
         Ci is the number of output channels.
     """
+
     def __init__(
         self,
         input_dim: int,

@@ -27,6 +27,7 @@ class Downsample(nn.Module):
         F // stride is the downsampled frequency dimension.
 
     """
+
     def __init__(
         self,
         input_dim: int,
@@ -72,6 +73,7 @@ class ConvolutionModule(nn.Module):
         T is sequence length,
         D is input dimensionality.
     """
+
     def __init__(
         self,
         input_dim: int,
@@ -156,6 +158,7 @@ class SDLayer(nn.Module):
         T is sequence length,
         Ci+1 is the number of output channels.
     """
+
     def __init__(
         self,
         subband_interval: Tuple[float, float],
@@ -196,7 +199,7 @@ class SDLayer(nn.Module):
         - torch.Tensor: Output tensor of shape (B, Fi+1, T, Ci+1).
         """
         B, F, T, C = x.shape
-        x = x[:, int(self.subband_interval[0] * F): int(self.subband_interval[1] * F)]
+        x = x[:, int(self.subband_interval[0] * F) : int(self.subband_interval[1] * F)]
         x = x.permute(0, 3, 1, 2)
         x = self.downsample(x)
         x = self.activation(x)
@@ -234,6 +237,7 @@ class SDBlock(nn.Module):
         T is sequence length,
         Ci+1 is the number of output channels.
     """
+
     def __init__(
         self,
         input_dim: int,

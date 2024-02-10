@@ -41,6 +41,7 @@ class SCNet(nn.Module):
         C is input dimensionality,
         S is the number of sources.
     """
+
     def __init__(
         self,
         freq_dim: int,
@@ -149,12 +150,12 @@ class SCNet(nn.Module):
         return sum(p.numel() for p in self.parameters())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     net_params = {
         "freq_dim": 2049,
         "input_dims": [4, 32, 64],
         "output_dims": [32, 64, 128],
-        "bandsplit_ratios": [.175, .392, .433],
+        "bandsplit_ratios": [0.175, 0.392, 0.433],
         "downsample_strides": [1, 4, 16],
         "n_conv_modules": [3, 2, 1],
         "n_rnn_layers": 6,

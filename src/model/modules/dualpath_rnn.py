@@ -21,6 +21,7 @@ class RNNModule(nn.Module):
         T is sequence length,
         D is input dimensionality.
     """
+
     def __init__(self, input_dim: int, hidden_dim: int, bidirectional: bool = True):
         """
         Initializes RNNModule with input dimension, hidden dimension, and bidirectional flag.
@@ -68,6 +69,7 @@ class RFFTModule(nn.Module):
     - Output: (B, F, T // 2 + 1, D * 2) if performing forward FFT.
               (B, F, T, D // 2, 2) if performing inverse FFT.
     """
+
     def __init__(self, inverse: bool = False):
         """
         Initializes RFFTModule with inverse flag.
@@ -124,6 +126,7 @@ class DualPathRNN(nn.Module):
         T is sequence length (time dimension),
         D is input dimensionality (channel dimension).
     """
+
     def __init__(
         self,
         n_layers: int,
