@@ -8,6 +8,39 @@ from model.utils import compute_sd_layer_shapes, compute_gcr
 
 
 class SCNet(nn.Module):
+    """
+    SCNet class implements a source separation network,
+    which explicitly split the spectrogram of the mixture into several subbands
+    and introduce a sparsity-based encoder to model different frequency bands.
+
+    Paper: "SCNET: SPARSE COMPRESSION NETWORK FOR MUSIC SOURCE SEPARATION"
+    Authors: Weinan Tong, Jiaxu Zhu et al.
+    Link: https://arxiv.org/abs/2401.13276.pdf
+
+    Args:
+    - freq_dim (int): Dimensionality of the frequency domain.
+    - input_dims (List[int]): List of input channel dimensions for each block.
+    - output_dims (List[int]): List of output channel dimensions for each block.
+    - bandsplit_ratios (List[float]): List of ratios for splitting the frequency bands.
+    - downsample_strides (List[int]): List of stride values for downsampling in each block.
+    - n_conv_modules (List[int]): List specifying the number of convolutional modules in each block.
+    - n_rnn_layers (int): Number of recurrent layers in the dual path RNN.
+    - rnn_hidden_dim (int): Dimensionality of the hidden state in the dual path RNN.
+    - n_sources (int, optional): Number of sources to be separated. Default is 4.
+
+    Shapes:
+    - Input: (B, F, T, C) where
+        B is batch size,
+        F is the number of features,
+        T is sequence length,
+        C is input dimensionality.
+    - Output: (B, F, T, C, S) where
+        B is batch size,
+        F is the number of features,
+        T is sequence length,
+        C is input dimensionality,
+        S is the number of sources.
+    """
     def __init__(
         self,
         freq_dim: int,
@@ -20,6 +53,9 @@ class SCNet(nn.Module):
         rnn_hidden_dim: int,
         n_sources: int = 4,
     ):
+        """
+        Initializes SCNet with input parameters.
+        """
         super().__init__()
         self.assert_input_data(
             input_dims,
@@ -47,7 +83,7 @@ class SCNet(nn.Module):
             )
             for i in range(0, n_blocks)
         )
-        self.dualpath_block = DualPathRNN(
+        self.dualpath_blocks = DualPathRNN(
             n_layers=n_rnn_layers,
             input_dim=output_dims[-1],
             hidden_dim=rnn_hidden_dim,
@@ -60,12 +96,15 @@ class SCNet(nn.Module):
                 sd_intervals=sd_intervals[i],
                 upsample_strides=downsample_strides,
             )
-            for i in range(n_blocks - 1, -1, -1)
+            for i in reversed(range(0, n_blocks))
         )
         self.gcr = compute_gcr(subband_shapes)
 
     @staticmethod
     def assert_input_data(*args):
+        """
+        Asserts that the shapes of input features are equal.
+        """
         for arg1 in args:
             for arg2 in args:
                 if len(arg1) != len(arg2):
@@ -75,8 +114,13 @@ class SCNet(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Input: (B, F, T, C), where ...
-        Output: (B, F, T, C, S), where ...
+        Performs forward pass through the SCNet.
+
+        Args:
+        - x (torch.Tensor): Input tensor of shape (B, F, T, C).
+
+        Returns:
+        - torch.Tensor: Output tensor of shape (B, F, T, C, S).
         """
         B, F, T, C = x.shape
 
@@ -87,7 +131,7 @@ class SCNet(nn.Module):
             x_skips.append(x_skip)
 
         # separation part
-        x = self.dualpath_block(x)
+        x = self.dualpath_blocks(x)
 
         # decoder part
         for su_block, x_skip in zip(self.su_blocks, reversed(x_skips)):
@@ -99,6 +143,9 @@ class SCNet(nn.Module):
         return x
 
     def count_parameters(self):
+        """
+        Counts the total number of parameters in the SCNet.
+        """
         return sum(p.numel() for p in self.parameters())
 
 
@@ -122,4 +169,3 @@ if __name__ == '__main__':
 
     test_input = torch.rand(B, F, T, C).to(device)
     out = net(test_input)
-
