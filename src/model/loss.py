@@ -15,8 +15,7 @@ class RMSELoss(nn.Module):
         Initialize RMSELoss.
         """
         super().__init__()
-        self.mse_real = nn.MSELoss()
-        self.mse_imag = nn.MSELoss()
+        self.mse = nn.MSELoss()
         self.eps = eps
 
     def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
@@ -33,8 +32,8 @@ class RMSELoss(nn.Module):
         - loss (torch.Tensor): Computed RMSE loss.
         """
         loss = torch.sqrt(
-            self.mse_real(pred[..., 0], target[..., 0])
-            + self.mse_imag(pred[..., 1], target[..., 1])
+            self.mse(pred[..., 0], target[..., 0])
+            + self.mse(pred[..., 1], target[..., 1])
             + self.eps
         )
         return loss
