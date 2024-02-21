@@ -22,6 +22,8 @@ Unofficial PyTorch implementation of the paper
 
 - **10.02.2024**
   - Model itself is finished. The train script is on its way.
+- **21.02.2024**
+  - Add part of the training pipeline.
 
 ---
 

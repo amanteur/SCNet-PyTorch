@@ -18,9 +18,8 @@ class SCNet(nn.Module):
     Link: https://arxiv.org/abs/2401.13276.pdf
 
     Args:
-    - freq_dim (int): Dimensionality of the frequency domain.
-    - input_dims (List[int]): List of input channel dimensions for each block.
-    - output_dims (List[int]): List of output channel dimensions for each block.
+    - n_fft (int): Number of FFTs to determine the frequency dimension of the input.
+    - dimes (List[int]): List of channel dimensions for each block.
     - bandsplit_ratios (List[float]): List of ratios for splitting the frequency bands.
     - downsample_strides (List[int]): List of stride values for downsampling in each block.
     - n_conv_modules (List[int]): List specifying the number of convolutional modules in each block.
@@ -44,9 +43,8 @@ class SCNet(nn.Module):
 
     def __init__(
         self,
-        freq_dim: int,
-        input_dims: List[int],
-        output_dims: List[int],
+        n_fft: int,
+        dims: List[int],
         bandsplit_ratios: List[float],
         downsample_strides: List[int],
         n_conv_modules: List[int],
@@ -59,45 +57,43 @@ class SCNet(nn.Module):
         """
         super().__init__()
         self.assert_input_data(
-            input_dims,
-            output_dims,
             bandsplit_ratios,
             downsample_strides,
             n_conv_modules,
         )
 
-        n_blocks = len(input_dims)
+        n_blocks = len(dims) - 1
+        n_freq_bins = n_fft // 2 + 1
         subband_shapes, sd_intervals = compute_sd_layer_shapes(
-            input_shape=freq_dim,
+            input_shape=n_freq_bins,
             bandsplit_ratios=bandsplit_ratios,
             downsample_strides=downsample_strides,
-            n_layers=len(input_dims),
+            n_layers=n_blocks,
         )
-
         self.sd_blocks = nn.ModuleList(
             SDBlock(
-                input_dim=input_dims[i],
-                output_dim=output_dims[i],
+                input_dim=dims[i],
+                output_dim=dims[i + 1],
                 bandsplit_ratios=bandsplit_ratios,
                 downsample_strides=downsample_strides,
                 n_conv_modules=n_conv_modules,
             )
-            for i in range(0, n_blocks)
+            for i in range(n_blocks)
         )
         self.dualpath_blocks = DualPathRNN(
             n_layers=n_rnn_layers,
-            input_dim=output_dims[-1],
+            input_dim=dims[-1],
             hidden_dim=rnn_hidden_dim,
         )
         self.su_blocks = nn.ModuleList(
             SUBlock(
-                input_dim=output_dims[i],
-                output_dim=input_dims[i] if i != 0 else input_dims[i] * n_sources,
+                input_dim=dims[i + 1],
+                output_dim=dims[i] if i != 0 else dims[i] * n_sources,
                 subband_shapes=subband_shapes[i],
                 sd_intervals=sd_intervals[i],
                 upsample_strides=downsample_strides,
             )
-            for i in reversed(range(0, n_blocks))
+            for i in reversed(range(n_blocks))
         )
         self.gcr = compute_gcr(subband_shapes)
 
@@ -152,9 +148,8 @@ class SCNet(nn.Module):
 
 if __name__ == "__main__":
     net_params = {
-        "freq_dim": 2049,
-        "input_dims": [4, 32, 64],
-        "output_dims": [32, 64, 128],
+        "n_fft": 4096,
+        "dims": [4, 32, 64, 128],
         "bandsplit_ratios": [0.175, 0.392, 0.433],
         "downsample_strides": [1, 4, 16],
         "n_conv_modules": [3, 2, 1],

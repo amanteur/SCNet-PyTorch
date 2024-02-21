@@ -14,41 +14,52 @@ class SourceSeparationDataset(Dataset):
     Dataset class for source separation tasks.
 
     Args:
+    - dataset_dirs (str): Comma-separated paths to directories where datasets are located.
     - subset (str): Subset of the dataset to load.
     - window_size (int): Size of the sliding window in seconds.
     - step_size (int): Step size of the sliding window in seconds.
     - sample_rate (int): Sample rate of the audio.
-    - sources (Optional[List[str]]): List of source names. Defaults to ["drums", "bass", "other", "vocals"].
+    - sources (Optional[List[str]]): List of source names. Defaults to ['drums', 'bass', 'other', 'vocals'].
     """
 
-    DATASET_DIRS: List[str] = os.environ.get("DATASET_PATH").split(",")
-    MIXTURE_NAME: str = "mixture"
+    MIXTURE_NAME: str = 'mixture'
+    SOURCE_NAMES: List[str] = ['drums', 'bass', 'other', 'vocals']
 
     def __init__(
-        self,
-        subset: str,
-        window_size: int,
-        step_size: int,
-        sample_rate: int,
-        sources: Optional[List[str]] = None,
+            self,
+            dataset_dirs: str,
+            subset: str,
+            window_size: int,
+            step_size: int,
+            sample_rate: int,
+            dataset_extension: str = 'wav',
+            dataset_path: Optional[str] = None,
+            mixture_name: Optional[str] = None,
+            sources: Optional[List[str]] = None,
     ):
         """
         Initializes the SourceSeparationDataset.
         """
         super().__init__()
 
+        self.dataset_dirs: List[str] = dataset_dirs.split(',')
         self.subset = subset
+        self.dataset_extension = dataset_extension
+        self.dataset_path = dataset_path
+
         self.window_size = int(window_size * sample_rate)
         self.step_size = int(step_size * sample_rate)
         self.sample_rate = sample_rate
-        self.sources = sources or ["drums", "bass", "other", "vocals"]
 
-        self.df = self.load_df(subset)
+        self.mixture_name = mixture_name or self.MIXTURE_NAME
+        self.sources = sources or self.SOURCE_NAMES
+
+        self.df = self.load_df()
         self.segment_ids, self.track_ids = self.get_ids()
 
     def generate_offsets(
-        self,
-        total_frames: int,
+            self,
+            total_frames: int,
     ) -> List[int]:
         """
         Generates the offsets based on total frames of track, window size and step size of segments.
@@ -60,28 +71,26 @@ class SourceSeparationDataset(Dataset):
         - List[int]: List of offsets.
         """
         return [
-            start
-            for start in range(0, total_frames - self.window_size + 1, self.step_size)
+            start for start in range(0, total_frames - self.window_size + 1, self.step_size)
         ]
 
-    def load_df(self, subset: str) -> pd.DataFrame:
+    def load_df(self) -> pd.DataFrame:
         """
         Loads the DataFrame based on the train/test subset.
-
-        Args:
-        - subset (str): Subset of the dataset.
 
         Returns:
         - pd.DataFrame: Loaded DataFrame.
         """
-        df = construct_dataset(self.DATASET_DIRS)
-        df = df[df.subset.eq(subset)]
-        df["offset"] = df.apply(
-            lambda x: self.generate_offsets(x["total_frames"]), axis=1
+        df = construct_dataset(
+            self.dataset_dirs,
+            extension=self.dataset_extension,
+            save_path=self.dataset_path,
         )
-        df = df.explode("offset")
-        df["track_id"] = df["track_name"].factorize()[0]
-        df["segment_id"] = df.set_index(["track_id", "offset"]).index.factorize()[0]
+        df = df[df['subset'].eq(self.subset)]
+        df['offset'] = df['total_frames'].apply(self.generate_offsets)
+        df = df.explode('offset')
+        df['track_id'] = df['track_name'].factorize()[0]
+        df['segment_id'] = df.set_index(['track_id', 'offset']).index.factorize()[0]
         return df
 
     def get_ids(self) -> Tuple[List[int], List[int]]:
@@ -91,8 +100,8 @@ class SourceSeparationDataset(Dataset):
         Returns:
         - Tuple[List[int], List[int]]: Tuple containing segment and track IDs.
         """
-        segment_ids = self.df["segment_id"].tolist()
-        track_ids = self.df["track_id"].unique().tolist()
+        segment_ids = self.df['segment_id'].tolist()
+        track_ids = self.df['track_id'].unique().tolist()
         return segment_ids, track_ids
 
     def load_audio(self, segment_info: Dict[str, Any]) -> torch.Tensor:
@@ -106,13 +115,12 @@ class SourceSeparationDataset(Dataset):
         - torch.Tensor: Loaded audio tensor.
         """
         audio, sr = torchaudio.load(
-            segment_info["path"],
+            segment_info['path'],
             num_frames=self.window_size,
-            frame_offset=segment_info["offset"],
+            frame_offset=segment_info['offset'],
         )
-        assert (
-            sr == self.sample_rate
-        ), f"Sample rate of the audio should be {self.sample_rate}Hz instead of {sr}Hz."
+        assert sr == self.sample_rate, \
+            f"Sample rate of the audio should be {self.sample_rate}Hz instead of {sr}Hz."
         return audio
 
     def load_mixture(self, idx: int) -> torch.Tensor:
@@ -127,9 +135,9 @@ class SourceSeparationDataset(Dataset):
         """
         segment_info = (
             self.df[
-                self.df["segment_id"].eq(idx)
-                & self.df["source_type"].eq(self.MIXTURE_NAME)
-            ]
+                self.df['segment_id'].eq(idx)
+                & self.df['source_type'].eq(self.mixture_name)
+                ]
             .iloc[0]
             .to_dict()
         )
@@ -150,8 +158,9 @@ class SourceSeparationDataset(Dataset):
         for source in self.sources:
             segment_info = (
                 self.df[
-                    self.df["segment_id"].eq(idx) & self.df["source_type"].eq(source)
-                ]
+                    self.df['segment_id'].eq(idx)
+                    & self.df['source_type'].eq(source)
+                    ]
                 .iloc[0]
                 .to_dict()
             )
@@ -172,7 +181,7 @@ class SourceSeparationDataset(Dataset):
         segment_id = self.segment_ids[idx]
         mixture = self.load_mixture(segment_id)
         sources = self.load_sources(segment_id)
-        return {"mixture": mixture, "sources": sources}
+        return {'mixture': mixture, 'sources': sources}
 
     def __len__(self) -> int:
         """
@@ -184,7 +193,7 @@ class SourceSeparationDataset(Dataset):
         return len(self.segment_ids)
 
     def get_train_val_split(
-        self, lengths: List[float], seed: Optional[int] = None
+            self, lengths: List[float], seed: Optional[int] = None
     ) -> Tuple[Subset, Subset]:
         """
         Splits the dataset into training and validation subsets.
@@ -196,9 +205,10 @@ class SourceSeparationDataset(Dataset):
         Returns:
         - Tuple[Subset, Subset]: Tuple containing the training and validation subsets.
         """
-        assert (
-            len(lengths) == 2
-        ), "Dataset can be only split into train and validation subset."
+        assert self.subset == 'train', \
+            "Only train subset of the dataset can be split."
+        assert len(lengths) == 2, \
+            "Dataset can be only split into train and validation subset."
         generator = None
         if seed is not None:
             generator = torch.Generator().manual_seed(seed)

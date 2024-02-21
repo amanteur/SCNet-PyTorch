@@ -1,0 +1,99 @@
+data:
+    use_validation: True
+    use_augmentations: False
+
+    dataset:
+        _target_: 'data.dataset.SourceSeparationDataset'
+        subset: 'train'
+        dataset_dirs: ${oc.env:DATASET_DIR}
+        dataset_path: ${oc.env:DATASET_PATH}
+        dataset_extension: 'wav'
+        window_size: 11
+        step_size: 1
+        sample_rate: 44100
+        sources: ['drums', 'bass', 'other', 'vocals']
+
+    split:
+        lengths: [0.9, 0.1]
+        seed: 42
+
+    loader:
+        train:
+            batch_size: 4
+            num_workers: 8
+            shuffle: True
+            drop_last: True
+        validation:
+            batch_size: 4
+            num_workers: 8
+            shuffle: False
+            drop_last: False
+
+    augmentations: null
+
+model:
+    device: 'cuda'
+    return_spec: True
+
+    transform:
+        stft:
+            _target_: 'torchaudio.transforms.Spectrogram'
+            n_fft: 4096
+            win_length: 4096
+            hop_length: 1024
+            power: null
+
+        istft:
+            _target_: 'torchaudio.transforms.InverseSpectrogram'
+            n_fft: 4096
+            win_length: 4096
+            hop_length: 1024
+    net:
+        _target_: 'model.scnet.SCNet'
+        _convert_: 'object'
+        n_fft: ${model.transform.stft.n_fft}
+        dims: [4, 32, 64, 128]
+        bandsplit_ratios: [.175, .392, .433]
+        downsample_strides: [1, 4, 16]
+        n_conv_modules: [3, 2, 1]
+        n_rnn_layers: 6
+        rnn_hidden_dim: 128
+        n_sources: 4
+
+    loss:
+        _target_: 'model.loss.RMSELoss'
+
+    optimizer:
+        _target_: 'torch.optim.Adam'
+        lr: 5e-4
+
+    scheduler: null
+
+utils:
+    metrics:
+        sdr:
+            _target_: 'torchmetrics.audio.SignalDistortionRatio'
+    logger: null
+
+    callbacks:
+        lr_monitor:
+            _target_: 'lightning.pytorch.callbacks.LearningRateMonitor'
+            logging_interval: 'epoch'
+        model_ckpt:
+            _target_: 'lightning.pytorch.callbacks.ModelCheckpoint'
+            monitor: 'val/loss'
+            mode: 'min'
+            save_top_k: 4
+            dirpath: '/weights'
+            filename: 'epoch{epoch:02d}-val_loss{val/loss:.2f}'
+            auto_insert_metric_name: False
+        model_ckpt_usdr:
+            _target_: 'lightning.pytorch.callbacks.ModelCheckpoint'
+            monitor: 'val/sdr'
+            mode: 'max'
+            save_top_k: 4
+            dirpath: ${utils.callbacks.model_ckpt.dirpath}
+            filename: 'epoch{epoch:02d}-val_sdr{val/sdr:.2f}'
+            auto_insert_metric_name: False
+
+

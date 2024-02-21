@@ -77,12 +77,13 @@ class RFFTModule(nn.Module):
         super().__init__()
         self.inverse = inverse
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, time_dim: int) -> torch.Tensor:
         """
         Performs forward or inverse FFT on the input tensor x.
 
         Args:
         - x (torch.Tensor): Input tensor of shape (B, F, T, D).
+        - time_dim (int): Input size of time dimension.
 
         Returns:
         - torch.Tensor: Output tensor after FFT or its inverse operation.
@@ -95,7 +96,7 @@ class RFFTModule(nn.Module):
         else:
             x = x.reshape(B, F, T, D // 2, 2)
             x = torch.view_as_complex(x)
-            x = torch.fft.irfft(x, dim=2)
+            x = torch.fft.irfft(x, n=time_dim, dim=2)
         return x
 
     def extra_repr(self) -> str:
@@ -168,6 +169,8 @@ class DualPathRNN(nn.Module):
         Returns:
         - torch.Tensor: Output tensor of shape (B, F, T, D).
         """
+        time_dim = x.shape[2]
+
         for time_layer, freq_layer, rfft_layer in self.layers:
             B, F, T, D = x.shape
 
@@ -181,5 +184,5 @@ class DualPathRNN(nn.Module):
             x = x.reshape(B, T, F, D)
             x = x.permute(0, 2, 1, 3)
 
-            x = rfft_layer(x)
+            x = rfft_layer(x, time_dim)
         return x
