@@ -1,0 +1,12 @@
+stft:
+    _target_: torchaudio.transforms.Spectrogram
+    n_fft: 4096
+    win_length: 4096
+    hop_length: 1024
+    power: null
+
+istft:
+    _target_: torchaudio.transforms.InverseSpectrogram
+    n_fft: 4096
+    win_length: 4096
+    hop_length: 1024

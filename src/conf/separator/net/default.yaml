@@ -1,0 +1,10 @@
+_target_: model.scnet.SCNet
+_convert_: object
+n_fft: ${separator.transform.stft.n_fft}
+dims: [4, 32, 64, 128]
+bandsplit_ratios: [.175, .392, .433]
+downsample_strides: [1, 4, 16]
+n_conv_modules: [3, 2, 1]
+n_rnn_layers: 6
+rnn_hidden_dim: 128
+n_sources: 4

@@ -1,0 +1,12 @@
+job:
+    name: scnet
+output_subdir: yamls
+run:
+    dir: logs/${hydra.job.name}/${now:%Y-%m-%d}_${now:%H-%M}
+sweep:
+    dir: logs/${hydra.job.name}_multirun/${now:%Y-%m-%d}_${now:%H-%M}
+    subdir: ${hydra.job.num}
+job_logging:
+    handlers:
+        file:
+            filename: ${hydra.runtime.output_dir}/train.log

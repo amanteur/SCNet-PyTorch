@@ -1,0 +1,9 @@
+_target_: data.dataset.SourceSeparationDataset
+subset: train
+dataset_dirs: ${oc.env:DATASET_DIR}
+dataset_path: ${oc.env:DATASET_PATH}
+dataset_extension: wav
+window_size: 11
+step_size: 1
+sample_rate: 44100
+sources: ${sources}

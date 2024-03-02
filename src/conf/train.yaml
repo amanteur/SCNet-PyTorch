@@ -1,0 +1,48 @@
+defaults:
+    - _self_
+    - dataset: default
+    - separator: default
+    
+    - loss: default
+    - optimizer: default
+    - scheduler: null
+    
+    - metrics: default
+    - logger: default
+    - callbacks: default
+    - hydra: default
+
+
+seed: 42
+sources: [drums, bass, other, vocals]
+output_dir: ${hydra:runtime.output_dir}
+
+use_validation: True
+train_val_split:
+    lengths: [86, 14]
+loader:
+    train:
+        batch_size: 8
+        num_workers: 8
+        shuffle: True
+        drop_last: True
+    validation:
+        batch_size: 4
+        num_workers: 8
+        shuffle: False
+        drop_last: False
+
+trainer:
+    _target_: lightning.pytorch.Trainer
+    fast_dev_run: False
+    accelerator: cuda
+    max_epochs: 130
+    check_val_every_n_epoch: 1
+    num_sanity_val_steps: 5
+    log_every_n_steps: 100
+    devices: 1
+    gradient_clip_val: 5
+    precision: 32
+    enable_progress_bar: True
+    benchmark: False
+    deterministic: False

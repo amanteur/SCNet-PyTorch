@@ -1,0 +1,11 @@
+lr_monitor:
+    _target_: lightning.pytorch.callbacks.LearningRateMonitor
+    logging_interval: epoch
+model_ckpt:
+    _target_: lightning.pytorch.callbacks.ModelCheckpoint
+    monitor: val/usdr
+    mode: max
+    save_top_k: 3
+    dirpath: ${hydra:runtime.output_dir}/checkpoints
+    filename: epoch{epoch:02d}-val_usdr{val/usdr:.2f}
+    auto_insert_metric_name: False
