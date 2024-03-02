@@ -49,8 +49,8 @@ class Separator(nn.Module):
         self.ps = self.ws - self.ss
 
         self.stft = instantiate(stft)
-        self.net = instantiate(istft)
-        self.istft = instantiate(net)
+        self.net = instantiate(net)
+        self.istft = instantiate(istft)
 
     def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, int]:
         """
