@@ -1,6 +1,5 @@
 .idea/
 **/*.ipynb_checkpoints/
-**/*logs/
 **/*.pt
 **/*.ipynb
 *.pyc

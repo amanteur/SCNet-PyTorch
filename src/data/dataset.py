@@ -1,4 +1,3 @@
-import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -179,9 +178,14 @@ class SourceSeparationDataset(Dataset):
         - Dict[str, torch.Tensor]: Dictionary containing mixture and sources.
         """
         segment_id = self.segment_ids[idx]
+
         mixture = self.load_mixture(segment_id)
         sources = self.load_sources(segment_id)
-        return {'mixture': mixture, 'sources': sources}
+
+        return {
+            'mixture': mixture,
+            'sources': sources,
+        }
 
     def __len__(self) -> int:
         """
@@ -193,7 +197,9 @@ class SourceSeparationDataset(Dataset):
         return len(self.segment_ids)
 
     def get_train_val_split(
-            self, lengths: List[float], seed: Optional[int] = None
+            self,
+            lengths: List[float],
+            seed: Optional[int] = None
     ) -> Tuple[Subset, Subset]:
         """
         Splits the dataset into training and validation subsets.
@@ -206,9 +212,9 @@ class SourceSeparationDataset(Dataset):
         - Tuple[Subset, Subset]: Tuple containing the training and validation subsets.
         """
         assert self.subset == 'train', \
-            "Only train subset of the dataset can be split."
+            "Only train subset of the dataset can be split into train and val."
         assert len(lengths) == 2, \
-            "Dataset can be only split into train and validation subset."
+            "Dataset can be only split into two subset."
         generator = None
         if seed is not None:
             generator = torch.Generator().manual_seed(seed)

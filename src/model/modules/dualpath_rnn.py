@@ -89,6 +89,10 @@ class RFFTModule(nn.Module):
         - torch.Tensor: Output tensor after FFT or its inverse operation.
         """
         B, F, T, D = x.shape
+        dtype = x.dtype
+        # in case of training in fp16/bf16
+        if dtype != torch.float and (T & (T - 1)):
+            x = x.float()
         if not self.inverse:
             x = torch.fft.rfft(x, dim=2)
             x = torch.view_as_real(x)
@@ -97,6 +101,7 @@ class RFFTModule(nn.Module):
             x = x.reshape(B, F, T, D // 2, 2)
             x = torch.view_as_complex(x)
             x = torch.fft.irfft(x, n=time_dim, dim=2)
+        x = x.to(dtype)
         return x
 
     def extra_repr(self) -> str:
