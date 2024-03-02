@@ -1,5 +1,4 @@
 defaults:
-    - transform: default
     - net: default
 
 window_size: 11
@@ -8,3 +7,16 @@ sample_rate: 44100
 batch_size: 4
 
 return_spec: True
+
+stft:
+    _target_: torchaudio.transforms.Spectrogram
+    n_fft: 4096
+    win_length: 4096
+    hop_length: 1024
+    power: null
+
+istft:
+    _target_: torchaudio.transforms.InverseSpectrogram
+    n_fft: ${separator.stft.n_fft}
+    win_length: ${separator.stft.win_length}
+    hop_length: ${separator.stft.hop_length}

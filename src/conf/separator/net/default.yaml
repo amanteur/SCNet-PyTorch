@@ -1,6 +1,6 @@
 _target_: model.scnet.SCNet
 _convert_: object
-n_fft: ${separator.transform.stft.n_fft}
+n_fft: ${separator.stft.n_fft}
 dims: [4, 32, 64, 128]
 bandsplit_ratios: [.175, .392, .433]
 downsample_strides: [1, 4, 16]
