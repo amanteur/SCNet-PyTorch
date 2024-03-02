@@ -23,8 +23,9 @@ def construct_dataset(
     if save_path is not None and Path(save_path).is_file():
         dataset = pd.read_parquet(save_path)
         return dataset
-    assert isinstance(dataset_dirs, list), \
-        f"dataset_dirs should be a list of strings, but got {type(dataset_dirs)}"
+    assert isinstance(
+        dataset_dirs, list
+    ), f"dataset_dirs should be a list of strings, but got {type(dataset_dirs)}"
     dataset = []
     for dataset_dir in dataset_dirs:
         for path in Path(dataset_dir).glob(f"**/*.{extension}"):
@@ -56,7 +57,9 @@ def construct_dataset(
     ]
     dataset = pd.DataFrame(dataset, columns=columns)
     if save_path is not None:
-        assert Path(save_path).suffix in [".pqt", ".parquet"], \
-            "save_path should be in .parquet/.pqt format."
+        assert Path(save_path).suffix in [
+            ".pqt",
+            ".parquet",
+        ], "save_path should be in .parquet/.pqt format."
         dataset.to_parquet(save_path, index=False)
     return dataset

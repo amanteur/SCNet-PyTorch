@@ -25,15 +25,15 @@ class Separator(nn.Module):
     """
 
     def __init__(
-            self,
-            return_spec: bool,
-            batch_size: int,
-            sample_rate: int,
-            window_size: float,
-            step_size: float,
-            stft: DictConfig,
-            istft: DictConfig,
-            net: DictConfig,
+        self,
+        return_spec: bool,
+        batch_size: int,
+        sample_rate: int,
+        window_size: float,
+        step_size: float,
+        stft: DictConfig,
+        istft: DictConfig,
+        net: DictConfig,
     ) -> None:
         """
         Initialize Separator.
@@ -84,7 +84,7 @@ class Separator(nn.Module):
         return x, pad_size
 
     def apply_istft(
-            self, x: torch.Tensor, pad_size: Optional[int] = None
+        self, x: torch.Tensor, pad_size: Optional[int] = None
     ) -> torch.Tensor:
         """
         Apply Inverse Short-Time Fourier Transform (ISTFT) to input tensor.
@@ -136,7 +136,9 @@ class Separator(nn.Module):
         x = x.reshape(B, Fr, T, Ch, Co, S).permute(0, 5, 3, 1, 2, 4).contiguous()
         return x
 
-    def forward(self, wav_mixture: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def forward(
+        self, wav_mixture: torch.Tensor
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
         Forward pass of the separator.
 
@@ -173,11 +175,7 @@ class Separator(nn.Module):
         - y (torch.Tensor): Padded input tensor.
         """
         padding_add = self.ss - (y.shape[-1] + self.ps * 2 - self.ws) % self.ss
-        y = F.pad(
-            y,
-            (self.ps, self.ps + padding_add),
-            'constant'
-        )
+        y = F.pad(y, (self.ps, self.ps + padding_add), "constant")
         return y, padding_add
 
     def unpad_whole(self, y: torch.Tensor, padding_add: int) -> torch.Tensor:
@@ -191,7 +189,7 @@ class Separator(nn.Module):
         Returns:
         - y (torch.Tensor): Unpadded input tensor.
         """
-        return y[..., self.ps:-(self.ps + padding_add)]
+        return y[..., self.ps : -(self.ps + padding_add)]
 
     def unfold(self, y: torch.Tensor) -> torch.Tensor:
         """
@@ -203,11 +201,7 @@ class Separator(nn.Module):
         Returns:
         - y (torch.Tensor): Unfolded input tensor.
         """
-        y = y.unfold(
-            -1,
-            self.ws,
-            self.ss
-        ).permute(1, 0, 2)
+        y = y.unfold(-1, self.ws, self.ss).permute(1, 0, 2)
         return y
 
     def fold(self, y_chunks: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
@@ -225,7 +219,7 @@ class Separator(nn.Module):
         y_out = torch.zeros_like(y).unsqueeze(0).repeat(n_sources, 1, 1)
         start = 0
         for i in range(n_chunks):
-            y_out[..., start:start + self.ws] += y_chunks[i]
+            y_out[..., start : start + self.ws] += y_chunks[i]
             start += self.ss
         return y_out
 
@@ -242,7 +236,7 @@ class Separator(nn.Module):
         norm_value = self.ws / self.ss
         y_chunks = torch.cat(
             [
-                self(y_chunks[start:start + self.bs])[0] / norm_value
+                self(y_chunks[start : start + self.bs])[0] / norm_value
                 for start in range(0, y_chunks.shape[0], self.bs)
             ]
         )

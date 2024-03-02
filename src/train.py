@@ -45,11 +45,7 @@ def train(cfg: DictConfig) -> None:
 
     log.info("Starting training...")
     try:
-        trainer.fit(
-            lt_wrapper,
-            train_dataloader,
-            val_dataloader
-        )
+        trainer.fit(lt_wrapper, train_dataloader, val_dataloader)
     except Exception as e:
         log.error(f"Finished with error:\n{traceback.format_exc()}")
 

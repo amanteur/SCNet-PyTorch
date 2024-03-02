@@ -5,9 +5,7 @@ from torchmetrics.audio import SignalDistortionRatio
 
 
 def global_signal_distortion_ratio(
-    preds: torch.Tensor,
-    target: torch.Tensor,
-    epsilon: float = 1e-7
+    preds: torch.Tensor, target: torch.Tensor, epsilon: float = 1e-7
 ) -> torch.Tensor:
     """
     Calculates the Global Signal Distortion Ratio (GSDR) between predicted and target signals.
@@ -20,12 +18,8 @@ def global_signal_distortion_ratio(
     Returns:
     - torch.Tensor: Mean Global Signal Distortion Ratio (GSDR) over the batch.
     """
-    num = torch.sum(
-        torch.square(target), dim=(-2, -1)
-    ) + epsilon
-    den = torch.sum(
-        torch.square(target - preds), dim=(-2, -1)
-    ) + epsilon
+    num = torch.sum(torch.square(target), dim=(-2, -1)) + epsilon
+    den = torch.sum(torch.square(target - preds), dim=(-2, -1)) + epsilon
     usdr = 10 * torch.log10(num / den)
     return usdr.mean()
 
@@ -41,6 +35,7 @@ class GlobalSignalDistortionRatio(SignalDistortionRatio):
 
     Paper: https://arxiv.org/pdf/2308.06979.pdf
     """
+
     def __init__(
         self,
         epsilon: float = 1e-7,
@@ -58,9 +53,7 @@ class GlobalSignalDistortionRatio(SignalDistortionRatio):
 
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
         """Update state with predictions and targets."""
-        sdr_batch = global_signal_distortion_ratio(
-            preds, target, self.epsilon
-        )
+        sdr_batch = global_signal_distortion_ratio(preds, target, self.epsilon)
 
         self.sum_sdr += sdr_batch.sum()
         self.total += sdr_batch.numel()
