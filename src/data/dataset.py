@@ -18,7 +18,12 @@ class SourceSeparationDataset(Dataset):
     - window_size (int): Size of the sliding window in seconds.
     - step_size (int): Step size of the sliding window in seconds.
     - sample_rate (int): Sample rate of the audio.
-    - sources (Optional[List[str]]): List of source names. Defaults to ['drums', 'bass', 'other', 'vocals'].
+    - dataset_extension (str, optional): Extension of the dataset files. Defaults to 'wav'.
+    - dataset_path (str, optional): Path to cache the dataset. Defaults to None.
+        If specified, dataset metadata will be cached in parquet format for future retrieval.
+        Defaults to None.
+    - mixture_name (str, optional): Name of the mixture. Defaults to None.
+    - sources (List[str], optional): List of source names. Defaults to ['drums', 'bass', 'other', 'vocals'].
     """
 
     MIXTURE_NAME: str = 'mixture'
@@ -75,7 +80,7 @@ class SourceSeparationDataset(Dataset):
 
     def load_df(self) -> pd.DataFrame:
         """
-        Loads the DataFrame based on the train/test subset.
+        Loads the DataFrame based on the train/test subset and populates data based on window/step sizes.
 
         Returns:
         - pd.DataFrame: Loaded DataFrame.

@@ -90,7 +90,7 @@ class RFFTModule(nn.Module):
         """
         B, F, T, D = x.shape
         dtype = x.dtype
-        # in case of training in fp16/bf16
+        # in case of training in fp16/bf16 and tensor is not a power of 2, tensor will be sent to the float32
         if dtype != torch.float and (T & (T - 1)):
             x = x.float()
         if not self.inverse:

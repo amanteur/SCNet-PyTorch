@@ -14,27 +14,43 @@ class Separator(nn.Module):
     This class implements a neural network-based separator for audio source separation.
 
     Args:
-    - cfg (DictConfig): Configuration object containing separator settings.
+    - return_spec (bool): Whether to return the spectrogram of separated sources along with audio.
+    - batch_size (int): Batch size of chunks to process at the same time.
+    - sample_rate (int): Sample rate of the audio.
+    - window_size (float): Size of the sliding window in seconds.
+    - step_size (float): Step size of the sliding window in seconds.
+    - stft (DictConfig): Configuration for Short-Time Fourier Transform (STFT).
+    - istft (DictConfig): Configuration for Inverse Short-Time Fourier Transform (ISTFT).
+    - net (DictConfig): Configuration for the neural network architecture.
     """
 
-    def __init__(self, cfg: DictConfig):
+    def __init__(
+            self,
+            return_spec: bool,
+            batch_size: int,
+            sample_rate: int,
+            window_size: float,
+            step_size: float,
+            stft: DictConfig,
+            istft: DictConfig,
+            net: DictConfig,
+    ) -> None:
         """
         Initialize Separator.
         """
         super().__init__()
-        self.cfg = cfg
 
-        self.return_spec = cfg.return_spec
+        self.return_spec = return_spec
 
-        self.bs = cfg.batch_size
-        self.sr = cfg.sample_rate
-        self.ws = int(cfg.window_size * cfg.sample_rate)
-        self.ss = int(cfg.step_size * cfg.sample_rate)
+        self.bs = batch_size
+        self.sr = sample_rate
+        self.ws = int(window_size * sample_rate)
+        self.ss = int(step_size * sample_rate)
         self.ps = self.ws - self.ss
 
-        self.stft = instantiate(cfg.transform.stft)
-        self.net = instantiate(cfg.net)
-        self.istft = instantiate(cfg.transform.istft)
+        self.stft = instantiate(stft)
+        self.net = instantiate(istft)
+        self.istft = instantiate(net)
 
     def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, int]:
         """
@@ -47,8 +63,7 @@ class Separator(nn.Module):
         - x (torch.Tensor): Padded input tensor.
         - pad_size (int): Size of padding.
         """
-        hop_length = self.cfg.transform.stft.hop_length
-        pad_size = hop_length - x.shape[-1] % hop_length
+        pad_size = self.stft.hop_length - x.shape[-1] % self.stft.hop_length
         x = F.pad(x, (0, pad_size))
         return x, pad_size
 
@@ -149,8 +164,14 @@ class Separator(nn.Module):
 
     def pad_whole(self, y: torch.Tensor) -> Tuple[torch.Tensor, int]:
         """
+        Pad the input tensor before overlap-add.
+
+        Args:
+        - y (torch.Tensor): Input tensor.
+
+        Returns:
+        - y (torch.Tensor): Padded input tensor.
         """
-        # pad for overlap-add
         padding_add = self.ss - (y.shape[-1] + self.ps * 2 - self.ws) % self.ss
         y = F.pad(
             y,
@@ -161,11 +182,26 @@ class Separator(nn.Module):
 
     def unpad_whole(self, y: torch.Tensor, padding_add: int) -> torch.Tensor:
         """
+        Unpad the input tensor after overlap-add.
+
+        Args:
+        - y (torch.Tensor): Input tensor.
+        - padding_add (int): Size of padding applied.
+
+        Returns:
+        - y (torch.Tensor): Unpadded input tensor.
         """
         return y[..., self.ps:-(self.ps + padding_add)]
 
     def unfold(self, y: torch.Tensor) -> torch.Tensor:
         """
+        Unfold the input tensor before applying the model.
+
+        Args:
+        - y (torch.Tensor): Input tensor.
+
+        Returns:
+        - y (torch.Tensor): Unfolded input tensor.
         """
         y = y.unfold(
             -1,
@@ -176,7 +212,14 @@ class Separator(nn.Module):
 
     def fold(self, y_chunks: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
-        overlap-add
+        Perform overlap-add operation.
+
+        Args:
+        - y_chunks (torch.Tensor): Segmented chunks of input tensor.
+        - y (torch.Tensor): Original input tensor.
+
+        Returns:
+        - y_out (torch.Tensor): Overlap-added output tensor.
         """
         n_chunks, n_sources, *_ = y_chunks.shape
         y_out = torch.zeros_like(y).unsqueeze(0).repeat(n_sources, 1, 1)
@@ -188,6 +231,13 @@ class Separator(nn.Module):
 
     def forward_batches(self, y_chunks: torch.Tensor) -> torch.Tensor:
         """
+        Forward pass for batches of input chunks.
+
+        Args:
+        - y_chunks (torch.Tensor): Input tensor chunks.
+
+        Returns:
+        - y_chunks (torch.Tensor): Processed output tensor chunks.
         """
         norm_value = self.ws / self.ss
         y_chunks = torch.cat(
@@ -201,6 +251,13 @@ class Separator(nn.Module):
     @torch.no_grad()
     def separate(self, y: torch.Tensor) -> torch.Tensor:
         """
+        Perform source separation on the input tensor.
+
+        Args:
+        - y (torch.Tensor): Input tensor.
+
+        Returns:
+        - y (torch.Tensor): Separated source tensor.
         """
         y, padding_add = self.pad_whole(y)
         y_chunks = self.unfold(y)

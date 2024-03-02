@@ -53,6 +53,7 @@ def train(cfg: DictConfig) -> None:
     except Exception as e:
         log.error(f"Finished with error:\n{traceback.format_exc()}")
 
+    # cleaning up if it was testrun
     if cfg.trainer.fast_dev_run:
         rmtree(cfg.output_dir)
 
