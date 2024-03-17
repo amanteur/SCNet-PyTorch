@@ -4,3 +4,5 @@ pandas~=1.5.3
 torch~=2.1.2
 torchaudio~=2.1.2
 lightning~=2.2.0
+soundfile==0.12.1
+tqdm==4.64.1

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional, Tuple
 
 import torch
@@ -5,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from hydra.utils import instantiate
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 
 class Separator(nn.Module):
@@ -34,11 +36,14 @@ class Separator(nn.Module):
         stft: DictConfig,
         istft: DictConfig,
         net: DictConfig,
+        use_progress_bar: bool = False,
     ) -> None:
         """
         Initialize Separator.
         """
         super().__init__()
+
+        assert step_size < window_size, "Step size should be smaller than window size."
 
         self.return_spec = return_spec
 
@@ -51,6 +56,32 @@ class Separator(nn.Module):
         self.stft = instantiate(stft)
         self.net = instantiate(net)
         self.istft = instantiate(istft)
+
+        self.use_progress_bar = use_progress_bar
+
+    @classmethod
+    def load_from_checkpoint(cls, path: str, **overrides) -> nn.Module:
+        """
+        Initializes Separator from Lightning checkpoint.
+
+        Args:
+        - path (str): Checkpoint path.
+        """
+        # load checkpoint
+        assert Path(path).suffix == ".ckpt", "Checkpoint is not in prefered format."
+        ckpt = torch.load(path)
+        params = ckpt["hyper_parameters"].separator
+        state_dict = ckpt["state_dict"]
+
+        # initialize separator
+        params = {**params, **overrides}
+        model = cls(**params)
+
+        # delete lightning-module related prefix from weight keys
+        state_dict = {k.replace("sep.", ""): state_dict[k] for k in state_dict}
+        # load state dict
+        _ = model.load_state_dict(state_dict)
+        return model
 
     def pad(self, x: torch.Tensor) -> Tuple[torch.Tensor, int]:
         """
@@ -234,10 +265,13 @@ class Separator(nn.Module):
         - y_chunks (torch.Tensor): Processed output tensor chunks.
         """
         norm_value = self.ws / self.ss
+        chunks = list(range(0, y_chunks.shape[0], self.bs))
+        if self.use_progress_bar:
+            chunks = tqdm(chunks)
         y_chunks = torch.cat(
             [
                 self(y_chunks[start : start + self.bs])[0] / norm_value
-                for start in range(0, y_chunks.shape[0], self.bs)
+                for start in chunks
             ]
         )
         return y_chunks
