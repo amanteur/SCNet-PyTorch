@@ -84,10 +84,10 @@ class LightningWrapper(LightningModule):
         metrics = {}
         for key in self.metrics:
             for i, source in enumerate(self.cfg.dataset.sources):
-                metrics[f"{key}_{source}"] = self.metrics[key](
+                metrics[f"val/{key}_{source}"] = self.metrics[key](
                     preds[:, i], target[:, i]
                 )
-            metrics[key] = self.metrics[key](preds, target)
+            metrics[f"val/{key}"] = self.metrics[key](preds, target)
         return metrics
 
     def on_before_optimizer_step(self, *args, **kwargs) -> None:
