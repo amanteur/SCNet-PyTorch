@@ -112,7 +112,7 @@ After training a model, you can run inference using the following command:
 ```bash
 python src/inference.py -i <INPUT_PATH> \ 
                         -o <OUTPUT_DIR> \
-                        -c <CHECKPOINT_PATH> \ 
+                        -c <CHECKPOINT_PATH>
 ```
 
 This command will generate separated audio files in .wav format in the <OUTPUT_DIR> directory.
