@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -245,7 +245,7 @@ class SDBlock(nn.Module):
         bandsplit_ratios: List[float],
         downsample_strides: List[int],
         n_conv_modules: List[int],
-        kernel_sizes: List[int] = None,
+        kernel_sizes: Optional[List[int]] = None,
     ):
         """
         Initializes SDBlock with input dimension, output dimension, band split ratios, downsample strides, number of convolutional modules, and kernel sizes.

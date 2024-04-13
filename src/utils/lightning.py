@@ -35,15 +35,19 @@ class LightningWrapper(LightningModule):
 
         self.save_hyperparameters(cfg)
 
-    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def training_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> torch.Tensor:
         loss = self.step(batch, mode="train")
         return loss
 
-    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def validation_step(
+        self, batch: Dict[str, torch.Tensor], batch_idx: int
+    ) -> torch.Tensor:
         loss = self.step(batch, mode="val")
         return loss
 
-    def step(self, batch: torch.Tensor, mode: str = "train") -> torch.Tensor:
+    def step(self, batch: Dict[str, torch.Tensor], mode: str = "train") -> torch.Tensor:
         """
         Common step function for training and validation.
 

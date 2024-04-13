@@ -1,7 +1,7 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Iterable, Tuple, List
+from typing import Iterable, List, Tuple
 
 import soundfile as sf
 import torch.nn as nn
@@ -15,10 +15,10 @@ SAVE_SAMPLE_RATE: int = 44100
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def parse_arguments():
@@ -115,24 +115,19 @@ def load_paths(input_path: str, output_path: str) -> Iterable[Tuple[Path, Path]]
 
 
 def process_files(
-    separator: nn.Module,
-    input_path: str,
-    output_path: str
+    separator: nn.Module, device: str, input_path: str, output_path: str
 ) -> None:
     for fp_in, fp_out in load_paths(input_path, output_path):
         y, sr = torchaudio.load(fp_in)
-        y = y.to(args.device)
-        y_separated = separator.separate(y).cpu()
+        y_separated = separator.separate(y.to(device)).cpu()
         for y_source, source in zip(y_separated, SOURCES):
-            sf.write(f"{fp_out}/{source}.wav", y_source.T, 44100)
+            sf.write(f"{fp_out}/{source}.wav", y_source.T, SAVE_SAMPLE_RATE)
 
 
 def main():
     args = parse_arguments()
 
-    logger.info(
-        f"Initializing Separator with following checkpoint {args.ckpt_path}..."
-    )
+    log.info(f"Initializing Separator with following checkpoint {args.ckpt_path}...")
     separator = Separator.load_from_checkpoint(
         path=args.ckpt_path,
         batch_size=args.batch_size,
@@ -141,9 +136,9 @@ def main():
         use_progress_bar=args.use_progress_bar,
     ).to(args.device)
 
-    logger.info("Processing audio files...")
-    process_files(separator, args.input_path, args.output_path)
-    logger.info(f"Audio files processing completed.")
+    log.info("Processing audio files...")
+    process_files(separator, args.device, args.input_path, args.output_path)
+    log.info(f"Audio files processing completed.")
 
 
 if __name__ == "__main__":

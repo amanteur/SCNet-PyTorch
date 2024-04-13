@@ -219,9 +219,7 @@ class SourceSeparationDataset(Dataset):
             self.subset == "train"
         ), "Only train subset of the dataset can be split into train and val."
         assert len(lengths) == 2, "Dataset can be only split into two subset."
-        generator = None
-        if seed is not None:
-            generator = torch.Generator().manual_seed(seed)
+        generator = torch.Generator().manual_seed(seed) if seed is not None else None
 
         train_track_ids, val_track_ids = random_split(
             self.track_ids, lengths=lengths, generator=generator

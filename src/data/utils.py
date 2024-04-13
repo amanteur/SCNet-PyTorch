@@ -5,6 +5,8 @@ from typing import Optional
 import pandas as pd
 import torchaudio
 
+PARQUET_EXTENSIONS: List[str] = [".pqt", ".parquet"]
+
 
 def construct_dataset(
     dataset_dirs: List[str], extension: str = "wav", save_path: Optional[str] = None
@@ -20,12 +22,18 @@ def construct_dataset(
     Returns:
     - pd.DataFrame: DataFrame containing information about the audio files.
     """
+    if save_path is not None and not Path(save_path).suffix in PARQUET_EXTENSIONS:
+        raise ValueError("'save_path' should be in .parquet/.pqt format.")
+
     if save_path is not None and Path(save_path).is_file():
-        dataset = pd.read_parquet(save_path)
-        return dataset
-    assert isinstance(
-        dataset_dirs, list
-    ), f"dataset_dirs should be a list of strings, but got {type(dataset_dirs)}"
+        dataset_df = pd.read_parquet(save_path)
+        return dataset_df
+
+    if not isinstance(dataset_dirs, list):
+        raise TypeError(
+            f"'dataset_dirs' should be a list of strings, but got {type(dataset_dirs)}"
+        )
+
     dataset = []
     for dataset_dir in dataset_dirs:
         for path in Path(dataset_dir).glob(f"**/*.{extension}"):
@@ -55,11 +63,7 @@ def construct_dataset(
         "sample_rate",
         "num_channels",
     ]
-    dataset = pd.DataFrame(dataset, columns=columns)
+    dataset_df = pd.DataFrame(dataset, columns=columns)
     if save_path is not None:
-        assert Path(save_path).suffix in [
-            ".pqt",
-            ".parquet",
-        ], "save_path should be in .parquet/.pqt format."
-        dataset.to_parquet(save_path, index=False)
-    return dataset
+        dataset_df.to_parquet(save_path, index=False)
+    return dataset_df

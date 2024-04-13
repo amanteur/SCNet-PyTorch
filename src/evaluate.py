@@ -1,5 +1,5 @@
+import argparse
 import os
-import sys
 import logging
 from typing import Dict, Iterable, List, Tuple
 
@@ -16,10 +16,10 @@ SOURCES: List[str] = ["drums", "bass", "other", "vocals"]
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def parse_arguments():
@@ -71,12 +71,16 @@ def load_data(dataset_path: str) -> Iterable[Tuple[str, str, Dict[str, str]]]:
         Tuple[str, str, Dict[str, str]]: Tuple containing track name, mixture path, and source paths.
     """
     df = pd.read_parquet(dataset_path)
-    df = df[df['subset'].eq('test')]
-    track_names = df['track_name'].unique()
+    df = df[df["subset"].eq("test")]
+    track_names = df["track_name"].unique()
     for track_name in tqdm(track_names):
-        rows = df[df['track_name'].eq(track_name)]
-        mixture_path = rows[rows['source_type'].eq('mixture')]['path'].values[0]
-        source_paths = rows[~rows['source_type'].eq('mixture')].set_index('source_type')['path'].to_dict()
+        rows = df[df["track_name"].eq(track_name)]
+        mixture_path = rows[rows["source_type"].eq("mixture")]["path"].values[0]
+        source_paths = (
+            rows[~rows["source_type"].eq("mixture")]
+            .set_index("source_type")["path"]
+            .to_dict()
+        )
         yield track_name, mixture_path, source_paths
 
 
@@ -86,6 +90,7 @@ def compute_sdrs(separator: nn.Module, dataset_path: str, device: str) -> str:
 
     Args:
         separator (nn.Module): Separator model.
+        dataset_path (str): Path to the dataset.pqt.
         device (str): Device to send tensors on.
 
     Returns:
@@ -95,33 +100,25 @@ def compute_sdrs(separator: nn.Module, dataset_path: str, device: str) -> str:
     for track_name, mixture_path, source_paths in load_data(dataset_path):
         y, sr = torchaudio.load(mixture_path)
         y_separated = separator.separate(y.to(device)).cpu()
-        for y_source_est, source_type in zip(y_separated, source_paths):
+        for y_source_est, source_type in zip(y_separated, SOURCES):
             y_source_ref, _ = torchaudio.load(source_paths[source_type])
             sdr, *_ = fast_bss_eval.bss_eval_sources(
-                y_source_ref,
-                y_source_est,
-                compute_permutation=False,
-                load_diag=1e-7
+                y_source_ref, y_source_est, compute_permutation=False, load_diag=1e-7
             )
-            sdrs.append(
-                (track_name, source_type, sdr.mean().item())
-            )
-    sdrs_df = pd.DataFrame(sdrs, columns=['track_name', 'source_type', 'sdr'])
+            sdrs.append((track_name, source_type, sdr.mean().item()))
+    sdrs_df = pd.DataFrame(sdrs, columns=["track_name", "source_type", "sdr"])
 
-    return sdrs_df.groupby('source').mean().to_string()
+    return sdrs_df.groupby("source_type")["sdr"].mean().reset_index(name="sdr").to_string()
 
 
 def main():
     args = parse_arguments()
 
-    dataset_path = os.getenv('DATASET_PATH')
+    dataset_path = os.getenv("DATASET_PATH")
     if dataset_path is None:
-        logger.error("DATASET_PATH environment variable is not set.")
-        sys.exit(1)
+        raise ValueError("DATASET_PATH environment variable is not set.")
 
-    logger.info(
-        f"Initializing Separator with following checkpoint {args.ckpt_path}..."
-    )
+    log.info(f"Initializing Separator with following checkpoint {args.ckpt_path}...")
     separator = Separator.load_from_checkpoint(
         path=args.ckpt_path,
         batch_size=args.batch_size,
@@ -129,9 +126,9 @@ def main():
         step_size=args.step_size,
     ).to(args.device)
 
-    logger.info("Starting evaluation...")
-    metrics = compute_metrics(separator, args.device)
-    logger.info(f"Evaluation is completed with metrics\n{metrics}.")
+    log.info("Starting evaluation...")
+    metrics = compute_sdrs(separator, dataset_path, args.device)
+    log.info(f"Evaluation completed with following metrics:\n{metrics}")
 
 
 if __name__ == "__main__":
