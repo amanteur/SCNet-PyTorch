@@ -29,9 +29,12 @@ Unofficial PyTorch implementation of the paper
   - Finish the training pipeline and the separator.
 - **17.03.2024**
   - Finish inference.py and fill README.md
+- **13.04.2024**
+  - Finish evaluation pipeline and fill README.md.
 
-# ToDo's:
-- Add evaluation pipeline.
+## ToDo's
+
+- Add trained model.
 
 ---
 <a name="dependencies"/>
@@ -171,7 +174,36 @@ Make sure to replace `<INPUT_PATH>`, `<OUTPUT_DIR>`, and `<CHECKPOINT_PATH>` wit
 
 # Evaluation
 
-...
+After training a model, you can run evaluation pipeline using the following command:
+
+```bash
+python src/evaluate.py -c <CHECKPOINT_PATH>
+```
+
+This script uses defined checkpoint path `<CHECKPOINT_PATH>` and runs inference on `test` audio files from `DATASET_PATH` file.
+
+As a result, the script will output into console mean SDRs for each source.
+
+For more information about the script and its options, use:
+
+```bash
+usage: evaluate.py [-h] -c CKPT_PATH [-d DEVICE] [-b BATCH_SIZE] [-w WINDOW_SIZE] [-s STEP_SIZE]
+
+Argument Parser for Separator
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c CKPT_PATH, --ckpt-path CKPT_PATH
+                        Path to the model checkpoint
+  -d DEVICE, --device DEVICE
+                        Device to run the model on (default: cuda)
+  -b BATCH_SIZE, --batch-size BATCH_SIZE
+                        Batch size for processing (default: 4)
+  -w WINDOW_SIZE, --window-size WINDOW_SIZE
+                        Window size (default: 11)
+  -s STEP_SIZE, --step-size STEP_SIZE
+                        Step size (default: 5.5)
+```
 
 ---
 <a name="cite"/>
