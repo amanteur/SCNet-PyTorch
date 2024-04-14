@@ -108,7 +108,9 @@ def compute_sdrs(separator: nn.Module, dataset_path: str, device: str) -> str:
             sdrs.append((track_name, source_type, sdr.mean().item()))
     sdrs_df = pd.DataFrame(sdrs, columns=["track_name", "source_type", "sdr"])
 
-    return sdrs_df.groupby("source_type")["sdr"].mean().reset_index(name="sdr").to_string()
+    return (
+        sdrs_df.groupby("source_type")["sdr"].mean().reset_index(name="sdr").to_string()
+    )
 
 
 def main():

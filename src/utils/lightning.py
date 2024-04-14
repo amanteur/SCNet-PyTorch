@@ -35,19 +35,15 @@ class LightningWrapper(LightningModule):
 
         self.save_hyperparameters(cfg)
 
-    def training_step(
-        self, batch: Dict[str, torch.Tensor], batch_idx: int
-    ) -> torch.Tensor:
+    def training_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         loss = self.step(batch, mode="train")
         return loss
 
-    def validation_step(
-        self, batch: Dict[str, torch.Tensor], batch_idx: int
-    ) -> torch.Tensor:
+    def validation_step(self, batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         loss = self.step(batch, mode="val")
         return loss
 
-    def step(self, batch: Dict[str, torch.Tensor], mode: str = "train") -> torch.Tensor:
+    def step(self, batch: torch.Tensor, mode: str = "train") -> torch.Tensor:
         """
         Common step function for training and validation.
 
@@ -58,7 +54,8 @@ class LightningWrapper(LightningModule):
         Returns:
         - torch.Tensor: Loss tensor.
         """
-        wav_mix, wav_src = batch["mixture"], batch["sources"]
+        wav_src = batch
+        wav_mix = wav_src.sum(dim=1)
         wav_src_hat, spec_src_hat = self.sep(wav_mix)
         spec_src, _ = self.sep.apply_stft(wav_src)
 
@@ -67,13 +64,13 @@ class LightningWrapper(LightningModule):
         self.log(f"{mode}/loss", loss.detach(), prog_bar=True)
 
         if mode == "val":
-            metrics = self.compute_metrics(wav_src_hat, wav_src)
+            metrics = self.compute_metrics(wav_src_hat, wav_src, mode=mode)
             self.log_dict(metrics)
         return loss
 
     @torch.no_grad()
     def compute_metrics(
-        self, preds: torch.Tensor, target: torch.Tensor
+        self, preds: torch.Tensor, target: torch.Tensor, mode: str
     ) -> Dict[str, torch.Tensor]:
         """
         Computes metrics for evaluation.
@@ -81,6 +78,7 @@ class LightningWrapper(LightningModule):
         Args:
         - preds (torch.Tensor): Predicted sources tensor.
         - target (torch.Tensor): Target sources tensor.
+        - mode (str): Mode of operation. Either 'train' or 'val'.
 
         Returns:
         - Dict[str, torch.Tensor]: Dictionary containing computed metrics.
@@ -88,10 +86,10 @@ class LightningWrapper(LightningModule):
         metrics = {}
         for key in self.metrics:
             for i, source in enumerate(self.cfg.dataset.sources):
-                metrics[f"val/{key}_{source}"] = self.metrics[key](
+                metrics[f"{mode}/{key}_{source}"] = self.metrics[key](
                     preds[:, i], target[:, i]
                 )
-            metrics[f"val/{key}"] = self.metrics[key](preds, target)
+            metrics[f"{mode}/{key}"] = self.metrics[key](preds, target)
         return metrics
 
     def on_before_optimizer_step(self, *args, **kwargs) -> None:

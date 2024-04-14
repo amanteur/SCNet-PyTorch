@@ -179,7 +179,9 @@ class SDLayer(nn.Module):
         """
         super().__init__()
         self.subband_interval = subband_interval
-        self.downsample = Downsample(input_dim, output_dim, downsample_kernel_size, downsample_stride)
+        self.downsample = Downsample(
+            input_dim, output_dim, downsample_kernel_size, downsample_stride
+        )
         self.activation = nn.GELU()
         conv_modules = [
             ConvolutionModule(
@@ -272,7 +274,10 @@ class SDBlock(nn.Module):
                 kernel_sizes=kernel_sizes,
             )
             for sbi, dks, dss, ncm in zip(
-                subband_intervals, downsample_kernel_sizes, downsample_strides, n_conv_modules
+                subband_intervals,
+                downsample_kernel_sizes,
+                downsample_strides,
+                n_conv_modules,
             )
         )
         self.global_conv2d = nn.Conv2d(output_dim, output_dim, 1, 1)

@@ -87,14 +87,23 @@ class Upsample(nn.Module):
     """
 
     def __init__(
-        self, input_dim: int, output_dim: int, kernel_size: int, stride: int, output_padding: int
+        self,
+        input_dim: int,
+        output_dim: int,
+        kernel_size: int,
+        stride: int,
+        output_padding: int,
     ):
         """
         Initializes Upsample with input dimension, output dimension, stride, and output padding.
         """
         super().__init__()
         self.conv = nn.ConvTranspose2d(
-            input_dim, output_dim, (kernel_size, 1), (stride, 1), output_padding=(output_padding, 0)
+            input_dim,
+            output_dim,
+            (kernel_size, 1),
+            (stride, 1),
+            output_padding=(output_padding, 0),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -150,7 +159,10 @@ class SULayer(nn.Module):
         super().__init__()
         sd_shape = sd_interval[1] - sd_interval[0]
         upsample_output_padding = get_convtranspose_output_padding(
-            input_shape=sd_shape, output_shape=subband_shape, kernel_size=upsample_kernel_size, stride=upsample_stride
+            input_shape=sd_shape,
+            output_shape=subband_shape,
+            kernel_size=upsample_kernel_size,
+            stride=upsample_stride,
         )
         self.upsample = Upsample(
             input_dim=input_dim,
@@ -228,7 +240,12 @@ class SUBlock(nn.Module):
                 sd_interval=sdi,
             )
             for i, (uks, uss, sbs, sdi) in enumerate(
-                zip(upsample_kernel_sizes, upsample_strides, subband_shapes, sd_intervals)
+                zip(
+                    upsample_kernel_sizes,
+                    upsample_strides,
+                    subband_shapes,
+                    sd_intervals,
+                )
             )
         )
 

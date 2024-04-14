@@ -173,7 +173,7 @@ class SourceSeparationDataset(Dataset):
             audios.append(audio)
         return torch.stack(audios)
 
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+    def __getitem__(self, idx: int) -> torch.Tensor:
         """
         Retrieves an item from the dataset based on the index.
 
@@ -184,14 +184,8 @@ class SourceSeparationDataset(Dataset):
         - Dict[str, torch.Tensor]: Dictionary containing mixture and sources.
         """
         segment_id = self.segment_ids[idx]
-
-        mixture = self.load_mixture(segment_id)
         sources = self.load_sources(segment_id)
-
-        return {
-            "mixture": mixture,
-            "sources": sources,
-        }
+        return sources
 
     def __len__(self) -> int:
         """

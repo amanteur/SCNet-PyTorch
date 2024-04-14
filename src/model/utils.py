@@ -105,7 +105,9 @@ def compute_sd_layer_shapes(
         ]
         conv2d_shapes = [
             get_conv_output_shape(bs, kernel_size=dks, stride=ds)
-            for bs, dks, ds in zip(bandsplit_shapes, downsample_kernel_sizes, downsample_strides)
+            for bs, dks, ds in zip(
+                bandsplit_shapes, downsample_kernel_sizes, downsample_strides
+            )
         ]
         input_shape = sum(conv2d_shapes)
         bandsplit_shapes_list.append(bandsplit_shapes)
