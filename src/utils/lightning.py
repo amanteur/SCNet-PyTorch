@@ -28,7 +28,10 @@ class LightningWrapper(LightningModule):
 
         self.sep = Separator(**cfg.separator)
 
-        self.augmentations = nn.Sequential(*instantiate(cfg.augmentations).values()) if cfg.get("augmentations") else nn.Identity()
+        self.augmentations = (
+            nn.Sequential(*instantiate(cfg.augmentations).values())
+            if cfg.get("augmentations") else nn.Identity()
+        )
 
         self.loss = instantiate(cfg.loss)
         self.optimizer = instantiate(cfg.optimizer, params=self.sep.parameters())
