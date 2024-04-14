@@ -7,3 +7,4 @@ window_size: 11
 step_size: 1
 sample_rate: 44100
 sources: ${sources}
+cache_data: True

@@ -20,16 +20,16 @@ output_dir: ${hydra:runtime.output_dir}
 
 use_validation: True
 train_val_split:
-    lengths: [86, 14]
+    lengths: [0.86, 0.14]
 loader:
     train:
-        batch_size: 8
-        num_workers: 8
+        batch_size: 16
+        num_workers: 4
         shuffle: True
         drop_last: True
     validation:
-        batch_size: 4
-        num_workers: 8
+        batch_size: 8
+        num_workers: 4
         shuffle: False
         drop_last: False
 
