@@ -13,6 +13,7 @@ class Downsample(nn.Module):
     Args:
     - input_dim (int): Dimensionality of the input channels.
     - output_dim (int): Dimensionality of the output channels.
+    - kernel_size (int): Kernel size for the convolution operation.
     - stride (int): Stride value for the convolution operation.
 
     Shapes:
@@ -32,13 +33,14 @@ class Downsample(nn.Module):
         self,
         input_dim: int,
         output_dim: int,
+        kernel_size: int,
         stride: int,
     ):
         """
         Initializes Downsample with input dimension, output dimension, and stride.
         """
         super().__init__()
-        self.conv = nn.Conv2d(input_dim, output_dim, 1, (stride, 1))
+        self.conv = nn.Conv2d(input_dim, output_dim, (kernel_size, 1), (stride, 1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -141,6 +143,7 @@ class SDLayer(nn.Module):
     - subband_interval (Tuple[float, float]): Tuple representing the frequency interval for subband decomposition.
     - input_dim (int): Dimensionality of the input channels.
     - output_dim (int): Dimensionality of the output channels after downsampling.
+    - downsample_kernel_size (int): Kernel size value for the downsampling operation.
     - downsample_stride (int): Stride value for the downsampling operation.
     - n_conv_modules (int): Number of convolutional modules.
     - kernel_sizes (List[int]): List of kernel sizes for the convolutional layers.
@@ -164,6 +167,7 @@ class SDLayer(nn.Module):
         subband_interval: Tuple[float, float],
         input_dim: int,
         output_dim: int,
+        downsample_kernel_size: int,
         downsample_stride: int,
         n_conv_modules: int,
         kernel_sizes: List[int],
@@ -175,7 +179,7 @@ class SDLayer(nn.Module):
         """
         super().__init__()
         self.subband_interval = subband_interval
-        self.downsample = Downsample(input_dim, output_dim, downsample_stride)
+        self.downsample = Downsample(input_dim, output_dim, downsample_kernel_size, downsample_stride)
         self.activation = nn.GELU()
         conv_modules = [
             ConvolutionModule(
@@ -221,6 +225,7 @@ class SDBlock(nn.Module):
     - input_dim (int): Dimensionality of the input channels.
     - output_dim (int): Dimensionality of the output channels.
     - bandsplit_ratios (List[float]): List of ratios for splitting the frequency bands.
+    - downsample_kernel_sizes (List[int]): List of kernel sizes values for downsampling in each subband layer.
     - downsample_strides (List[int]): List of stride values for downsampling in each subband layer.
     - n_conv_modules (List[int]): List specifying the number of convolutional modules in each subband layer.
     - kernel_sizes (List[int], optional): List of kernel sizes for the convolutional layers. Default is None.
@@ -243,6 +248,7 @@ class SDBlock(nn.Module):
         input_dim: int,
         output_dim: int,
         bandsplit_ratios: List[float],
+        downsample_kernel_sizes: List[int],
         downsample_strides: List[int],
         n_conv_modules: List[int],
         kernel_sizes: Optional[List[int]] = None,
@@ -260,12 +266,13 @@ class SDBlock(nn.Module):
                 input_dim=input_dim,
                 output_dim=output_dim,
                 subband_interval=sbi,
+                downsample_kernel_size=dks,
                 downsample_stride=dss,
                 n_conv_modules=ncm,
                 kernel_sizes=kernel_sizes,
             )
-            for sbi, dss, ncm in zip(
-                subband_intervals, downsample_strides, n_conv_modules
+            for sbi, dks, dss, ncm in zip(
+                subband_intervals, downsample_kernel_sizes, downsample_strides, n_conv_modules
             )
         )
         self.global_conv2d = nn.Conv2d(output_dim, output_dim, 1, 1)

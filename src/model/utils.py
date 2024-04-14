@@ -78,6 +78,7 @@ def get_convtranspose_output_padding(
 def compute_sd_layer_shapes(
     input_shape: int,
     bandsplit_ratios: List[float],
+    downsample_kernel_sizes: List[int],
     downsample_strides: List[int],
     n_layers: int,
 ) -> Tuple[List[List[int]], List[List[Tuple[int, int]]]]:
@@ -87,6 +88,7 @@ def compute_sd_layer_shapes(
     Args:
     - input_shape (int): Input shape.
     - bandsplit_ratios (List[float]): Ratios for splitting the frequency bands.
+    - downsample_kernel_sizes (List[int]): Kernel sizes for downsampling in each layer.
     - downsample_strides (List[int]): Strides for downsampling in each layer.
     - n_layers (int): Number of layers.
 
@@ -102,8 +104,8 @@ def compute_sd_layer_shapes(
             for left, right in bandsplit_intervals
         ]
         conv2d_shapes = [
-            get_conv_output_shape(bs, stride=ds)
-            for bs, ds in zip(bandsplit_shapes, downsample_strides)
+            get_conv_output_shape(bs, kernel_size=dks, stride=ds)
+            for bs, dks, ds in zip(bandsplit_shapes, downsample_kernel_sizes, downsample_strides)
         ]
         input_shape = sum(conv2d_shapes)
         bandsplit_shapes_list.append(bandsplit_shapes)

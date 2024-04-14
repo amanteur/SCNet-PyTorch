@@ -21,6 +21,7 @@ class SCNet(nn.Module):
     - n_fft (int): Number of FFTs to determine the frequency dimension of the input.
     - dimes (List[int]): List of channel dimensions for each block.
     - bandsplit_ratios (List[float]): List of ratios for splitting the frequency bands.
+    - downsample_kernel_sizes (List[int]): List of kernel size values for downsampling in each block.
     - downsample_strides (List[int]): List of stride values for downsampling in each block.
     - n_conv_modules (List[int]): List specifying the number of convolutional modules in each block.
     - n_rnn_layers (int): Number of recurrent layers in the dual path RNN.
@@ -46,6 +47,7 @@ class SCNet(nn.Module):
         n_fft: int,
         dims: List[int],
         bandsplit_ratios: List[float],
+        downsample_kernel_sizes: List[int],
         downsample_strides: List[int],
         n_conv_modules: List[int],
         n_rnn_layers: int,
@@ -58,6 +60,7 @@ class SCNet(nn.Module):
         super().__init__()
         self.assert_input_data(
             bandsplit_ratios,
+            downsample_kernel_sizes,
             downsample_strides,
             n_conv_modules,
         )
@@ -75,6 +78,7 @@ class SCNet(nn.Module):
                 input_dim=dims[i],
                 output_dim=dims[i + 1],
                 bandsplit_ratios=bandsplit_ratios,
+                downsample_kernel_sizes=downsample_kernel_sizes,
                 downsample_strides=downsample_strides,
                 n_conv_modules=n_conv_modules,
             )
@@ -91,6 +95,7 @@ class SCNet(nn.Module):
                 output_dim=dims[i] if i != 0 else dims[i] * n_sources,
                 subband_shapes=subband_shapes[i],
                 sd_intervals=sd_intervals[i],
+                upsample_kernel_sizes=downsample_kernel_sizes,
                 upsample_strides=downsample_strides,
             )
             for i in reversed(range(n_blocks))
@@ -151,6 +156,7 @@ if __name__ == "__main__":
         "n_fft": 4096,
         "dims": [4, 32, 64, 128],
         "bandsplit_ratios": [0.175, 0.392, 0.433],
+        "downsample_kernel_sizes": [3, 5, 17],
         "downsample_strides": [1, 4, 16],
         "n_conv_modules": [3, 2, 1],
         "n_rnn_layers": 6,

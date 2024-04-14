@@ -70,6 +70,7 @@ class Upsample(nn.Module):
     Args:
     - input_dim (int): Dimensionality of the input channels.
     - output_dim (int): Dimensionality of the output channels.
+    - kernel_size (int): Kernel size value for the transposed convolution operation.
     - stride (int): Stride value for the transposed convolution operation.
     - output_padding (int): Output padding value for the transposed convolution operation.
 
@@ -86,14 +87,14 @@ class Upsample(nn.Module):
     """
 
     def __init__(
-        self, input_dim: int, output_dim: int, stride: int, output_padding: int
+        self, input_dim: int, output_dim: int, kernel_size: int, stride: int, output_padding: int
     ):
         """
         Initializes Upsample with input dimension, output dimension, stride, and output padding.
         """
         super().__init__()
         self.conv = nn.ConvTranspose2d(
-            input_dim, output_dim, 1, (stride, 1), output_padding=(output_padding, 0)
+            input_dim, output_dim, (kernel_size, 1), (stride, 1), output_padding=(output_padding, 0)
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -116,6 +117,7 @@ class SULayer(nn.Module):
     Args:
     - input_dim (int): Dimensionality of the input channels.
     - output_dim (int): Dimensionality of the output channels.
+    - upsample_kernel_size (int): Kernel size for the upsampling operation.
     - upsample_stride (int): Stride value for the upsampling operation.
     - subband_shape (int): Shape of the subband.
     - sd_interval (Tuple[int, int]): Start and end indices of the subband interval.
@@ -137,6 +139,7 @@ class SULayer(nn.Module):
         self,
         input_dim: int,
         output_dim: int,
+        upsample_kernel_size: int,
         upsample_stride: int,
         subband_shape: int,
         sd_interval: Tuple[int, int],
@@ -147,11 +150,12 @@ class SULayer(nn.Module):
         super().__init__()
         sd_shape = sd_interval[1] - sd_interval[0]
         upsample_output_padding = get_convtranspose_output_padding(
-            input_shape=sd_shape, output_shape=subband_shape, stride=upsample_stride
+            input_shape=sd_shape, output_shape=subband_shape, kernel_size=upsample_kernel_size, stride=upsample_stride
         )
         self.upsample = Upsample(
             input_dim=input_dim,
             output_dim=output_dim,
+            kernel_size=upsample_kernel_size,
             stride=upsample_stride,
             output_padding=upsample_output_padding,
         )
@@ -181,6 +185,7 @@ class SUBlock(nn.Module):
     Args:
     - input_dim (int): Dimensionality of the input channels.
     - output_dim (int): Dimensionality of the output channels.
+    - upsample_kernel_sizes (List[int]): List of kernel size values for the upsampling operations.
     - upsample_strides (List[int]): List of stride values for the upsampling operations.
     - subband_shapes (List[int]): List of shapes for the subbands.
     - sd_intervals (List[Tuple[int, int]]): List of intervals for subband decomposition.
@@ -202,6 +207,7 @@ class SUBlock(nn.Module):
         self,
         input_dim: int,
         output_dim: int,
+        upsample_kernel_sizes: List[int],
         upsample_strides: List[int],
         subband_shapes: List[int],
         sd_intervals: List[Tuple[int, int]],
@@ -216,12 +222,13 @@ class SUBlock(nn.Module):
             SULayer(
                 input_dim=input_dim,
                 output_dim=output_dim,
+                upsample_kernel_size=uks,
                 upsample_stride=uss,
                 subband_shape=sbs,
                 sd_interval=sdi,
             )
-            for i, (uss, sbs, sdi) in enumerate(
-                zip(upsample_strides, subband_shapes, sd_intervals)
+            for i, (uks, uss, sbs, sdi) in enumerate(
+                zip(upsample_kernel_sizes, upsample_strides, subband_shapes, sd_intervals)
             )
         )
 
