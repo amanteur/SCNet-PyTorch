@@ -70,6 +70,7 @@ class SCNet(nn.Module):
         subband_shapes, sd_intervals = compute_sd_layer_shapes(
             input_shape=n_freq_bins,
             bandsplit_ratios=bandsplit_ratios,
+            downsample_kernel_sizes=downsample_kernel_sizes,
             downsample_strides=downsample_strides,
             n_layers=n_blocks,
         )
