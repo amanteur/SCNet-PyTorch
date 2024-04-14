@@ -1,9 +1,9 @@
-remix:
-  _target_: data.augmentations.Remix
-  proba: 1.0
-  group_size: 4
 scale:
   _target_: data.augmentations.Scale
   proba: 1.0
   min_scale: 0.25
   max_scale: 1.25
+remix:
+  _target_: data.augmentations.Remix
+  proba: 1.0
+  group_size: 4

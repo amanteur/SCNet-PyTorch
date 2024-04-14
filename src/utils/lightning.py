@@ -28,6 +28,8 @@ class LightningWrapper(LightningModule):
 
         self.sep = Separator(**cfg.separator)
 
+        self.augmentations = nn.Sequential(*instantiate(cfg.augmentations).values()) if cfg.get("augmentations") else nn.Identity()
+
         self.loss = instantiate(cfg.loss)
         self.optimizer = instantiate(cfg.optimizer, params=self.sep.parameters())
         self.scheduler = instantiate(cfg.scheduler) if cfg.get("scheduler") else None
@@ -54,8 +56,9 @@ class LightningWrapper(LightningModule):
         Returns:
         - torch.Tensor: Loss tensor.
         """
-        wav_src = batch
+        wav_src = self.augmentations(batch)
         wav_mix = wav_src.sum(dim=1)
+
         wav_src_hat, spec_src_hat = self.sep(wav_mix)
         spec_src, _ = self.sep.apply_stft(wav_src)
 
